@@ -13,6 +13,7 @@ Thumbs.db
 node_modules
 config.js
 build
+coverage
 
 *~
 [._]*.s[a-v][a-z]

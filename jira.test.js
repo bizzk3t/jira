@@ -13,16 +13,28 @@ beforeEach(() => {
   prompts.mockClear();
 });
 
-test('#query', async () => {
-  const expectedValue = {
-    data: 'value',
-  };
-  fetch.mockReturnValueOnce(
-    Promise.resolve(new Response(JSON.stringify(expectedValue)))
-  );
-  const res = await jira.query('https://www.google.com');
-  expect(res).toStrictEqual(expectedValue);
-});
+describe('#query', () => {
+  test('normal', async () => {
+    const expectedValue = {
+      data: 'value',
+    };
+    fetch.mockReturnValueOnce(
+      Promise.resolve(new Response(JSON.stringify(expectedValue)))
+    );
+    const res = await jira.query('https://www.google.com');
+    expect(res).toStrictEqual(expectedValue);
+  })
+  test('bad result', async () => {
+    const expectedValue = {
+      data: 'value',
+    };
+    fetch.mockReturnValueOnce(
+      Promise.resolve(Error)
+    );
+    const res = await jira.query('https://www.google.com');
+    expect(res).toBe('BadValue');
+  })
+})
 
 test('#getActiveSprintId', async () => {
   const expectedValue = { values: [{ id: 42 }] };
@@ -45,25 +57,59 @@ test('#getActiveSprintIssues', async () => {
     { title: 'TQS-456 - Summary B', value: 'TQS-456' },
   ]);
 });
-test('#ask', async () => {
-  const expectedValue = { value: 'TQS-123' };
-  const issues = [
-    { title: 'TQS-123 - Summary A', value: 'TQS-123' },
-    { title: 'TQS-456 - Summary B', value: 'TQS-456' },
-  ];
-  prompts.mockReturnValue(Promise.resolve(expectedValue));
-  const res = await jira.ask(issues);
-  expect(res).toStrictEqual(expectedValue);
+describe('#ask', () => {
+  test('simple ask', async () => {
+    const expectedValue = { value: 'TQS-123' };
+    const issues = [
+      { title: 'TQS-123 - Summary A', value: 'TQS-123' },
+      { title: 'TQS-456 - Summary B', value: 'TQS-456' },
+    ];
+    prompts.mockReturnValue(Promise.resolve(expectedValue));
+    const res = await jira.ask(issues);
+    expect(res).toStrictEqual(expectedValue);
+  })
+  test('ask failure', async () => {
+    prompts.mockReturnValueOnce(undefined);
+    const res = await jira.ask('a');
+    expect(res).toBe('BadResponse');
+  })
 });
 
-test('#main', async () => {
-  jest
-    .spyOn(jira, 'ask')
-    .mockReturnValue(Promise.resolve({ value: 'TQS-123' }));
-  jest
-    .spyOn(child_process, 'execSync')
-    .mockReturnValueOnce('.git')
-    .mockReturnValueOnce('command result');
-  const res = await jira.main();
-  expect(typeof res).toBe('string');
+describe('#main', () => {
+  test('sample pass', async () => {
+    jest
+      .spyOn(jira, 'ask')
+      .mockReturnValue(Promise.resolve({ value: 'TQS-123' }));
+    jest
+      .spyOn(child_process, 'execSync')
+      .mockReturnValueOnce('.git')
+      .mockReturnValueOnce('command result');
+    const res = await jira.main();
+    expect(typeof res).toBe('string');
+  })
+  test('when it fails', async () => {
+    jest
+      .spyOn(jira, 'ask')
+      .mockReturnValue(Promise.resolve({ value: 'TQS-123' }));
+    jest
+      .spyOn(child_process, 'execSync')
+      .mockReturnValueOnce('')
+      .mockReturnValueOnce('two')
+    const res = await jira.main();
+    expect(res).toBe('NotInGitDir');
+  })
+  test('when it fails from asking question', async () => {
+    jest
+      .spyOn(jira, 'ask')
+      .mockReturnValue(Promise.resolve(undefined));
+    const res = await jira.main();
+    expect(res).toBe('BadAskValue');
+  })
+  test('when it fails by having wrong project', async () => {
+    jest
+      .spyOn(jira, 'ask')
+      .mockReturnValue(Promise.resolve({ value: 'Bro-123' }));
+    const res = await jira.main();
+    expect(res).toBe('ConsoleError');
+  })
 });

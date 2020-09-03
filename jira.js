@@ -18,10 +18,12 @@ async function query (url) {
         Accept: 'application/json',
       },
     });
-    const data = response.json();
-    return data;
-  } catch (err) {
-    return err;
+    if (response && response.json) {
+      return response.json()
+    }
+    throw 'BadValue'
+  } catch (e) {
+    return e;
   }
 }
 
@@ -58,32 +60,38 @@ async function ask(issues) {
       choices: issues,
       initial: 1,
     });
-    return response;
+    if (response) {
+      return response
+    }
+    throw 'BadResponse'
   } catch (e) {
-    return {};
+    return e;
   }
 }
 
 async function main() {
   const res = (
-    await ask(
+    await module.exports.ask(
       await module.exports.getActiveSprintIssues(await module.exports.getActiveSprintId(config.board))
     )
-  ).value;
+  )?.value ?? '';
+  if (!res) {
+    return 'BadAskValue';
+  }
   if (res && res.startsWith(config.project)) {
-    const inGitDir = execSync('git rev-parse --git-dir 2> /dev/null')
-    if (!!inGitDir) {
-      const command = `git checkout -b ${res} && git push -u origin ${res}`
       try {
-        let result = execSync(command, { stdio: 'inherit', })?.toString() || '';
-        return result
+        const inGitDir = execSync('git rev-parse --git-dir 2> /dev/null')?.toString() ?? ''
+        if (!!inGitDir) {
+          const command = `git checkout -b ${res} && git push -u origin ${res}`
+          let result = execSync(command, { stdio: 'inherit', })?.toString() ?? '';
+          return result;
+        }
+        throw 'NotInGitDir'
       } catch (e) {
-        console.log(e)
         return e;
       }
-    }
-    return ''
   }
+  return 'ConsoleError'
 }
 
 module.exports = {
