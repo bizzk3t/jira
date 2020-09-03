@@ -1,16 +1,19 @@
 {
   "name": "jira",
   "version": "1.0.0",
+  "main": "./bin/cli.js",
   "description": "Get Jira issues from active sprint",
   "author": "Will Harrison <w@willharrison.org>",
   "license": "MIT",
   "repository": "https://gitlab.com/bizzk3t/jira",
   "bin": {
-    "jira": "bin.js"
+    "jira": "./bin/cli.js"
   },
   "scripts": {
     "start": "node cli.js",
     "test": "jest",
+    "build:install": "ln -s ./cli.js /usr/local/bin/jira",
+    "build:uninstall": "rm /usr/local/bin/jira",
     "coverage": "jest --collect-coverage"
   },
   "dependencies": {
