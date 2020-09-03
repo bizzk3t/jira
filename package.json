@@ -12,8 +12,6 @@
   "scripts": {
     "start": "node cli.js",
     "test": "jest",
-    "build:install": "ln -s ./cli.js /usr/local/bin/jira",
-    "build:uninstall": "rm /usr/local/bin/jira",
     "coverage": "jest --collect-coverage"
   },
   "dependencies": {

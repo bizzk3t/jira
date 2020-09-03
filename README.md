@@ -20,9 +20,14 @@ module.exports = {
 }
 ```
 
-## Installation
-`yarn global add .`
+## Install
+`yarn global add $PWD`
 
+## Uninstall
+`yarn global remove jira`
+
+## Usage
+`jira`
 
 ## test
 `yarn test`
