@@ -5,7 +5,9 @@
   "author": "Will Harrison <w@willharrison.org>",
   "license": "MIT",
   "repository": "https://gitlab.com/bizzk3t/jira",
-  "bin": "cli.js",
+  "bin": {
+    "jira": "bin.js"
+  },
   "scripts": {
     "start": "node cli.js",
     "test": "jest",
