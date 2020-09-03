@@ -36,26 +36,45 @@ describe('#query', () => {
   })
 })
 
-test('#getActiveSprintId', async () => {
-  const expectedValue = { values: [{ id: 42 }] };
-  jest.spyOn(jira, 'query').mockReturnValue(expectedValue);
-  expect(await jira.getActiveSprintId(0)).toBe(42);
-  jira.query.mockClear();
+describe('#getActiveSprintId', () => {
+  test('normal', async () => {
+    const expectedValue = { values: [{ id: 42 }] };
+    jest.spyOn(jira, 'query').mockReturnValue(expectedValue);
+    expect(await jira.getActiveSprintId(0)).toBe(42);
+  })
+  test('bad', async () => {
+    const expectedValue = { values: [{ id: 42 }] };
+    jest.spyOn(jira, 'query').mockReturnValue(undefined);
+    expect(await jira.getActiveSprintId(0)).toBe(-1);
+  })
 });
 
-test('#getActiveSprintIssues', async () => {
-  const expectedValue = {
-    issues: [
-      { key: 'TQS-123', fields: { summary: 'Summary A' } },
-      { key: 'TQS-456', fields: { summary: 'Summary B' } },
-    ],
-  };
-  jest.spyOn(jira, 'query').mockReturnValue(expectedValue);
-  const res = await jira.getActiveSprintIssues(23);
-  expect(res).toStrictEqual([
-    { title: 'TQS-123 - Summary A', value: 'TQS-123' },
-    { title: 'TQS-456 - Summary B', value: 'TQS-456' },
-  ]);
+describe('#getActiveSprintIssues', () => {
+  test('normal', async () => {
+    const expectedValue = {
+      issues: [
+        { key: 'TQS-123', fields: { summary: 'Summary A' } },
+        { key: 'TQS-456', fields: { summary: 'Summary B' } },
+      ],
+    };
+    jest.spyOn(jira, 'query').mockReturnValue(expectedValue);
+    const res = await jira.getActiveSprintIssues(23);
+    expect(res).toStrictEqual([
+      { title: 'TQS-123 - Summary A', value: 'TQS-123' },
+      { title: 'TQS-456 - Summary B', value: 'TQS-456' },
+    ]);
+    
+  })
+  test('bad', async () => {
+    jest.spyOn(jira, 'query').mockReturnValue(undefined);
+    const res = await jira.getActiveSprintIssues(23);
+    expect(res).toBe(undefined);
+  })
+  test('badv2', async () => {
+    jest.spyOn(jira, 'query').mockReturnValue({ issues: [{ notit: 's' }] });
+    const res = await jira.getActiveSprintIssues(23);
+    expect(res).toStrictEqual([undefined]);
+  })
 });
 describe('#ask', () => {
   test('simple ask', async () => {
@@ -97,6 +116,17 @@ describe('#main', () => {
       .mockReturnValueOnce('two')
     const res = await jira.main();
     expect(res).toBe('NotInGitDir');
+  })
+  test('when it fails from git checkout command', async () => {
+    jest
+      .spyOn(jira, 'ask')
+      .mockReturnValue(Promise.resolve({ value: 'Bro-123' }));
+    jest
+      .spyOn(child_process, 'execSync')
+      .mockReturnValueOnce('asdf')
+      .mockReturnValueOnce(undefined)
+    const res = await jira.main();
+    expect(res).toBe('ConsoleError');
   })
   test('when it fails from asking question', async () => {
     jest

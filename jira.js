@@ -37,18 +37,16 @@ async function getActiveSprintIssues(id) {
   const url =
     URL + `sprint/${id}/issue?fields=summary&jql=assignee=currentUser()`;
   const data = await module.exports.query(url);
-  return (
-    data?.issues?.map((issue) => {
-      const key = issue?.key ?? '';
-      const summary = issue?.fields?.summary ?? '';
-      if (key) {
-        return {
-          title: [key, summary].join(' - '),
-          value: key,
-        };
-      }
-    }) ?? []
-  );
+  return data?.issues?.map((issue) => {
+    const key = issue?.key ?? '';
+    const summary = issue?.fields?.summary ?? '';
+    if (key) {
+      return {
+        title: [key, summary].join(' - '),
+        value: key,
+      };
+    }
+  })
 }
 
 async function ask(issues) {
@@ -80,10 +78,10 @@ async function main() {
   }
   if (res && res.startsWith(config.project)) {
       try {
-        const inGitDir = execSync('git rev-parse --git-dir 2> /dev/null')?.toString() ?? ''
+        const inGitDir = execSync('git rev-parse --git-dir 2> /dev/null')
         if (!!inGitDir) {
           const command = `git checkout -b ${res} && git push -u origin ${res}`
-          let result = execSync(command, { stdio: 'inherit', })?.toString() ?? '';
+          let result = execSync(command, { stdio: 'inherit', })?.toString();
           return result;
         }
         throw 'NotInGitDir'
