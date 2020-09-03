@@ -23,3 +23,6 @@ module.exports = {
 ## Installation
 `yarn global add .`
 
+
+## test
+`yarn test`

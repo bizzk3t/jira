@@ -1,11 +1,13 @@
 {
   "name": "jira",
   "version": "1.0.0",
-  "main": "index.js",
+  "description": "Get Jira issues from active sprint",
   "author": "Will Harrison <w@willharrison.org>",
   "license": "MIT",
+  "repository": "https://gitlab.com/bizzk3t/jira",
+  "bin": "cli.js",
   "scripts": {
-    "start": "node index.js",
+    "start": "node cli.js",
     "test": "jest"
   },
   "dependencies": {
