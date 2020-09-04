@@ -55,8 +55,8 @@ describe('#getActiveSprintIssues', () => {
     jest.spyOn(jira, 'query').mockReturnValue(expectedValue)
     const res = await jira.getActiveSprintIssues(23)
     expect(res).toStrictEqual([
-      { title: 'TQS-123 - Summary A', value: 'TQS-123' },
-      { title: 'TQS-456 - Summary B', value: 'TQS-456' }
+      { title: 'TQS-123-Summary A', value: 'TQS-123-Summary-A' },
+      { title: 'TQS-456-Summary B', value: 'TQS-456-Summary-B' }
     ])
   })
   test('bad', async () => {
@@ -74,8 +74,8 @@ describe('#ask', () => {
   test('simple ask', async () => {
     const expectedValue = { value: 'TQS-123' }
     const issues = [
-      { title: 'TQS-123 - Summary A', value: 'TQS-123' },
-      { title: 'TQS-456 - Summary B', value: 'TQS-456' }
+      { title: 'TQS-123-Summary A', value: 'TQS-123-Summary-A' },
+      { title: 'TQS-456-Summary B', value: 'TQS-456-Summary-B' }
     ]
     prompts.mockReturnValue(Promise.resolve(expectedValue))
     const res = await jira.ask(issues)
@@ -91,10 +91,14 @@ describe('#ask', () => {
 })
 
 describe('#main', () => {
+  const sampleAskResponse = {
+    category: 'feature/TQS-123-Summary',
+    confirm: true
+  }
   test('sample pass', async () => {
     jest
       .spyOn(jira, 'ask')
-      .mockReturnValue(Promise.resolve({ value: 'TQS-123' }))
+      .mockReturnValue(Promise.resolve(sampleAskResponse))
     jest
       .spyOn(childProcess, 'execSync')
       .mockReturnValueOnce('.git')
@@ -102,10 +106,17 @@ describe('#main', () => {
     const res = await jira.main()
     expect(typeof res).toBe('string')
   })
-  test('inside a git dir', async () => {
+  test('when ask response value is crap', async () => {
     jest
       .spyOn(jira, 'ask')
-      .mockReturnValue(Promise.resolve({ value: 'TQS-123' }))
+      .mockReturnValue(Promise.resolve())
+    const res = await jira.main()
+    expect(res).toBe(undefined)
+  })
+  test('when inside a git dir', async () => {
+    jest
+      .spyOn(jira, 'ask')
+      .mockReturnValue(Promise.resolve(sampleAskResponse))
     jest
       .spyOn(childProcess, 'execSync')
       .mockImplementationOnce(() => {
@@ -114,10 +125,10 @@ describe('#main', () => {
     const res = await jira.main()
     expect(res).toBe('Error')
   })
-  test('not inside git dir', async () => {
+  test('when NOT inside git dir', async () => {
     jest
       .spyOn(jira, 'ask')
-      .mockReturnValue(Promise.resolve({ value: 'TQS-123' }))
+      .mockReturnValue(Promise.resolve(sampleAskResponse))
     jest
       .spyOn(childProcess, 'execSync')
       .mockReturnValueOnce('')
