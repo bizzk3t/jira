@@ -136,3 +136,19 @@ describe('#main', () => {
     expect(res).toBe(undefined)
   })
 })
+
+describe('#promptMessage', () => {
+  test('show a question with input value', () => {
+    expect(jira.promptMessage('value')).toBe(
+      'Is this correct?\nvalue'
+    )
+  })
+})
+
+describe('#promptFormat', () => {
+  test('format the type and issue name', () => {
+    expect(jira.promptFormat('type', { issue: 'issue' })).toBe(
+      'type/issue'
+    )
+  })
+})

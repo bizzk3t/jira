@@ -52,7 +52,7 @@ async function getActiveSprintIssues (id) {
     result = data.issues.map((issue) => {
       const riss = {
         title: [],
-        value: [],
+        value: []
       }
       if (issue && issue.key) {
         riss.title.push(issue.key)
@@ -66,13 +66,21 @@ async function getActiveSprintIssues (id) {
       riss.value = riss.value
         .join('-')
         .replace(/ /g, '-')
-        .replace(/[^A-Za-z0-9\-]/g, '')
+        .replace(/[^A-Za-z0-9-]/g, '')
       return riss
     }).filter(i => {
       return i && i.value
     })
   }
   return result
+}
+
+function promptFormat (val, values) {
+  return `${val}/${values.issue}`
+}
+
+function promptMessage (prev, values) {
+  return `Is this correct?\n${prev}`
 }
 
 async function ask (issues) {
@@ -84,25 +92,22 @@ async function ask (issues) {
         name: 'issue',
         message: 'Pick an Issue to Work on',
         choices: issues,
-        initial: 1,
+        initial: 1
       }, {
         type: 'select',
         name: 'category',
         message: 'Issue Category?',
-        format: (val, values) => {
-          return `${val}/${values.issue}`
-        },
+        format: promptFormat,
         choices: [
           { title: 'feature', value: 'feature' },
-          { title: 'bugfix', value: 'bugfix' }
+          { title: 'bugfix', value: 'bugfix' },
+          { title: 'test', value: 'test' }
         ]
       }, {
         type: 'confirm',
         name: 'confirm',
-        message: (prev, values) => {
-          return `Is this correct?\n${prev}`
-        },
-        initial: true,
+        message: promptMessage,
+        initial: true
       }
     ])
     result = response
@@ -136,11 +141,11 @@ async function main () {
 }
 
 module.exports = {
+  promptFormat,
+  promptMessage,
   query,
   getActiveSprintIssues,
   getActiveSprintId,
   ask,
   main
 }
-
-// main();
