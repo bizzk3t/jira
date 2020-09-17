@@ -1,9 +1,11 @@
 jest.mock('node-fetch')
 jest.mock('prompts')
 jest.mock('child_process')
+jest.mock('fs')
 
 const jira = require('./jira')
 const fetch = require('node-fetch')
+const fs = require('fs')
 const childProcess = require('child_process')
 const prompts = require('prompts')
 const { Response } = jest.requireActual('node-fetch')
@@ -12,14 +14,13 @@ beforeEach(() => {
   fetch.mockClear()
   prompts.mockClear()
 })
-
 describe('#query', () => {
   test('normal', async () => {
     const expectedValue = { data: 'value' }
     fetch.mockReturnValueOnce(
       Promise.resolve(new Response(JSON.stringify(expectedValue)))
     )
-    const res = await jira.query('https://www.google.com')
+    const res = await jira.query('', 'https://www.google.com')
     expect(res).toStrictEqual(expectedValue)
   })
   test('bad', async () => {
@@ -31,7 +32,6 @@ describe('#query', () => {
     expect((await jira.query('bad.domain'))).toBe('TypeError')
   })
 })
-
 describe('#getActiveSprintId', () => {
   test('normal', async () => {
     const expectedValue = { values: [{ id: 42 }] }
@@ -43,7 +43,6 @@ describe('#getActiveSprintId', () => {
     expect(await jira.getActiveSprintId(0)).toBe(-1)
   })
 })
-
 describe('#getActiveSprintIssues', () => {
   test('normal', async () => {
     const expectedValue = {
@@ -70,6 +69,20 @@ describe('#getActiveSprintIssues', () => {
     expect(res).toStrictEqual([])
   })
 })
+describe('#promptMessage', () => {
+  test('show a question with input value', () => {
+    expect(jira.promptMessage('value')).toBe(
+      'Is this correct?\nvalue'
+    )
+  })
+})
+describe('#promptFormat', () => {
+  test('format the type and issue name', () => {
+    expect(jira.promptFormat('type', { issue: 'issue' })).toBe(
+      'type/issue'
+    )
+  })
+})
 describe('#ask', () => {
   test('simple ask', async () => {
     const expectedValue = { value: 'TQS-123' }
@@ -89,13 +102,15 @@ describe('#ask', () => {
     expect(res).toBe('Error')
   })
 })
-
 describe('#main', () => {
   const sampleAskResponse = {
     category: 'feature/TQS-123-Summary',
     confirm: true
   }
   test('sample pass', async () => {
+    jest
+      .spyOn(fs, 'readFileSync')
+      .mockReturnValueOnce(require('./config.template.js'))
     jest
       .spyOn(jira, 'ask')
       .mockReturnValue(Promise.resolve(sampleAskResponse))
@@ -105,15 +120,23 @@ describe('#main', () => {
       .mockReturnValueOnce('command result')
     const res = await jira.main()
     expect(typeof res).toBe('string')
+    expect(jira.board)
+    // expect(jira.getActiveSprintId).toHaveBeenCalledWith('uesss')
   })
   test('when ask response value is crap', async () => {
+    jest
+      .spyOn(fs, 'readFileSync')
+      .mockReturnValueOnce(require('./config.template.js'))
     jest
       .spyOn(jira, 'ask')
       .mockReturnValue(Promise.resolve())
     const res = await jira.main()
-    expect(res).toBe(undefined)
+    expect(res).toBe('Error')
   })
   test('when inside a git dir', async () => {
+    jest
+      .spyOn(fs, 'readFileSync')
+      .mockReturnValueOnce(require('./config.template.js'))
     jest
       .spyOn(jira, 'ask')
       .mockReturnValue(Promise.resolve(sampleAskResponse))
@@ -123,9 +146,12 @@ describe('#main', () => {
         throw new Error()
       })
     const res = await jira.main()
-    expect(res).toBe('Error')
+    expect(res).toBe('Error: git command failed')
   })
   test('when NOT inside git dir', async () => {
+    jest
+      .spyOn(fs, 'readFileSync')
+      .mockReturnValueOnce(require('./config.template.js'))
     jest
       .spyOn(jira, 'ask')
       .mockReturnValue(Promise.resolve(sampleAskResponse))
@@ -133,22 +159,13 @@ describe('#main', () => {
       .spyOn(childProcess, 'execSync')
       .mockReturnValueOnce('')
     const res = await jira.main()
-    expect(res).toBe(undefined)
+    expect(res).toBe('Error')
   })
-})
-
-describe('#promptMessage', () => {
-  test('show a question with input value', () => {
-    expect(jira.promptMessage('value')).toBe(
-      'Is this correct?\nvalue'
-    )
-  })
-})
-
-describe('#promptFormat', () => {
-  test('format the type and issue name', () => {
-    expect(jira.promptFormat('type', { issue: 'issue' })).toBe(
-      'type/issue'
-    )
+  test('when config file is not there', async () => {
+    jest
+      .spyOn(fs, 'readFileSync')
+      .mockReturnValueOnce(undefined)
+    const res = await jira.main()
+    expect(res).toBe('Error: "./config.js" does not exist')
   })
 })
