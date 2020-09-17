@@ -1,11 +1,9 @@
 jest.mock('node-fetch')
 jest.mock('prompts')
 jest.mock('child_process')
-jest.mock('fs')
 
 const jira = require('./jira')
 const fetch = require('node-fetch')
-const fs = require('fs')
 const childProcess = require('child_process')
 const prompts = require('prompts')
 const { Response } = jest.requireActual('node-fetch')
@@ -81,6 +79,9 @@ describe('#promptFormat', () => {
     expect(jira.promptFormat('type', { issue: 'issue' })).toBe(
       'type/issue'
     )
+    expect(jira.promptFormat('', { issue: 'issue' })).toBe(
+      'issue'
+    )
   })
 })
 describe('#ask', () => {
@@ -109,34 +110,25 @@ describe('#main', () => {
   }
   test('sample pass', async () => {
     jest
-      .spyOn(fs, 'readFileSync')
-      .mockReturnValueOnce(require('./config.template.js'))
-    jest
       .spyOn(jira, 'ask')
       .mockReturnValue(Promise.resolve(sampleAskResponse))
     jest
       .spyOn(childProcess, 'execSync')
       .mockReturnValueOnce('.git')
       .mockReturnValueOnce('command result')
-    const res = await jira.main()
+    const res = await jira.main(require('./config.template.js'))
     expect(typeof res).toBe('string')
     expect(jira.board)
     // expect(jira.getActiveSprintId).toHaveBeenCalledWith('uesss')
   })
   test('when ask response value is crap', async () => {
     jest
-      .spyOn(fs, 'readFileSync')
-      .mockReturnValueOnce(require('./config.template.js'))
-    jest
       .spyOn(jira, 'ask')
       .mockReturnValue(Promise.resolve())
-    const res = await jira.main()
-    expect(res).toBe('Error')
+    const res = await jira.main(require('./config.template.js'))
+    expect(res).toBe('Error: branch name parsed incorrectly')
   })
   test('when inside a git dir', async () => {
-    jest
-      .spyOn(fs, 'readFileSync')
-      .mockReturnValueOnce(require('./config.template.js'))
     jest
       .spyOn(jira, 'ask')
       .mockReturnValue(Promise.resolve(sampleAskResponse))
@@ -145,27 +137,21 @@ describe('#main', () => {
       .mockImplementationOnce(() => {
         throw new Error()
       })
-    const res = await jira.main()
+    const res = await jira.main(require('./config.template.js'))
     expect(res).toBe('Error: git command failed')
   })
   test('when NOT inside git dir', async () => {
-    jest
-      .spyOn(fs, 'readFileSync')
-      .mockReturnValueOnce(require('./config.template.js'))
     jest
       .spyOn(jira, 'ask')
       .mockReturnValue(Promise.resolve(sampleAskResponse))
     jest
       .spyOn(childProcess, 'execSync')
       .mockReturnValueOnce('')
-    const res = await jira.main()
-    expect(res).toBe('Error')
+    const res = await jira.main(require('./config.template.js'))
+    expect(res).toBe('Error: not in git dir')
   })
-  test('when config file is not there', async () => {
-    jest
-      .spyOn(fs, 'readFileSync')
-      .mockReturnValueOnce(undefined)
+  test('when config is empty', async () => {
     const res = await jira.main()
-    expect(res).toBe('Error: "./config.js" does not exist')
+    expect(res).toBe('Error: config is empty')
   })
 })

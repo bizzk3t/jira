@@ -1,5 +1,4 @@
 'use strict'
-const fs = require('fs')
 const fetch = require('node-fetch')
 const prompts = require('prompts')
 const { execSync } = require('child_process')
@@ -70,8 +69,11 @@ async function getActiveSprintIssues (baseUrl, auth, id) {
   return result
 }
 
-function promptFormat (val, values) {
-  return `${val}/${values.issue}`
+function promptFormat (value, values) {
+  if (value) {
+    return `${value}/${values.issue}`
+  }
+  return `${values.issue}`
 }
 
 function promptMessage (prev, values) {
@@ -96,7 +98,8 @@ async function ask (issues) {
         choices: [
           { title: 'feature', value: 'feature' },
           { title: 'bugfix', value: 'bugfix' },
-          { title: 'test', value: 'test' }
+          { title: 'test', value: 'test' },
+          { title: '<NONE>', value: '' },
         ]
       }, {
         type: 'confirm',
@@ -112,10 +115,9 @@ async function ask (issues) {
   return result
 }
 
-async function main (filename = './config.js') {
-  const config = fs.readFileSync(filename, 'utf8')
+async function main (config) {
   if (!config) {
-    return `Error: "${filename}" does not exist`
+    return 'Error: config is empty'
   }
   const baseUrl = config.url + 'rest/agile/1.0/'
   const auth = `Basic ${Buffer.from(`${config.user}:${config.token}`).toString(
@@ -134,12 +136,15 @@ async function main (filename = './config.js') {
       if (inGitDir) {
         const command = `git checkout -b ${branchName} && git push -u origin ${branchName}`
         return execSync(command, { stdio: 'inherit' }).toString()
+      } else {
+        return 'Error: not in git dir'
       }
+    } else {
+      return 'Error: branch name parsed incorrectly'
     }
   } catch (e) {
     return 'Error: git command failed'
   }
-  return 'Error'
 }
 
 module.exports = {

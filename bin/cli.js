@@ -1,2 +1,2 @@
 #!/usr/bin/env node
-require('../jira').main()
+require('../jira').main(require('../config.js'))
